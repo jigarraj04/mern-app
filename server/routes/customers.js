@@ -20,7 +20,7 @@ router.get("/", async (req, res) => {
   const filter = {};
   if (search) {
     const rx = new RegExp(escapeRegex(search), "i");
-    filter.$or = [{ name: rx }, { company: rx }, { email: rx }, { tags: rx }];
+    filter.$or = [{ name: rx }, { company: rx }, { email: rx },{city: rx}, { tags: rx }];
   }
   res.json(await Customer.find(filter).sort({ createdAt: -1 }));
 });
@@ -34,7 +34,7 @@ router.get("/:id", async (req, res) => {
 
 // POST /api/customers
 router.post("/", async (req, res) => {
-  const { name, company, email, phone, tags } = req.body;
+  const { name, company, email, phone, city, tags } = req.body;
   if (!name || !name.trim()) {
     return res.status(400).json({ error: "Name is required" });
   }
@@ -43,6 +43,11 @@ router.post("/", async (req, res) => {
     company: company || "",
     email: email || "",
     phone: phone || "",
+
+
+    city: city || "",
+
+
     tags: parseTags(tags),
   });
   res.status(201).json(customer);
@@ -61,6 +66,11 @@ router.put("/:id", async (req, res) => {
   if (company !== undefined) customer.company = company;
   if (email !== undefined) customer.email = email;
   if (phone !== undefined) customer.phone = phone;
+
+
+  if (city !== undefined) customer.city = city;
+
+
   if (tags !== undefined) customer.tags = parseTags(tags);
 
   await customer.save();

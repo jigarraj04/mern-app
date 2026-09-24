@@ -97,6 +97,11 @@ export default function Customers() {
             <div className="card-meta">
               {c.email && <span>{c.email}</span>}
               {c.phone && <span>{c.phone}</span>}
+
+
+              {c.city && <span>{c.city}</span>}
+
+              
             </div>
             {c.tags?.length > 0 && (
               <div className="tag-row">

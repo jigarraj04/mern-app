@@ -114,6 +114,10 @@ export default function CustomerDetail() {
           <div className="card-meta" style={{ marginTop: 8 }}>
             {customer.email && <span>{customer.email}</span>}
             {customer.phone && <span>{customer.phone}</span>}
+
+            {customer.city && <span>{customer.city}</span>}
+
+            
           </div>
           {customer.tags?.length > 0 && (
             <div className="tag-row">

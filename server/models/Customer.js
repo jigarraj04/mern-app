@@ -7,6 +7,9 @@ const customerSchema = new mongoose.Schema(
     company: { type: String, trim: true, default: "" },
     email: { type: String, trim: true, default: "" },
     phone: { type: String, trim: true, default: "" },
+
+    city: { type: String, trim: true, default: "" },
+    
     tags: { type: [String], default: [] },
   },
   { timestamps: { createdAt: true, updatedAt: true }, toJSON: { transform: jsonTransform } }

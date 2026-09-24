@@ -7,6 +7,11 @@ export default function CustomerFormModal({ initial, onSave, onClose }) {
     company: initial?.company || "",
     email: initial?.email || "",
     phone: initial?.phone || "",
+
+
+    city: initial?.city || "",
+
+
     tags: (initial?.tags || []).join(", "),
   });
   const [error, setError] = useState("");
@@ -61,6 +66,13 @@ export default function CustomerFormModal({ initial, onSave, onClose }) {
               <input id="phone" value={form.phone} onChange={update("phone")} />
             </div>
           </div>
+
+
+          <div className="field">
+            <label htmlFor="city">City</label>
+            <input id="city" value={form.city} onChange={update("city")} />
+          </div>
+
 
           <div className="field">
             <label htmlFor="tags">Tags (comma separated)</label>
