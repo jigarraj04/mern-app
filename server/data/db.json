@@ -1,0 +1,28 @@
+{
+  "customers": [
+    {
+      "id": "c-x4vkf8n2",
+      "name": "jigar",
+      "company": "jigar",
+      "email": "jigar@gmail.com",
+      "phone": "123456789",
+      "tags": [
+        "retail",
+        "shoes"
+      ],
+      "createdAt": "2026-09-10T10:52:20.366Z"
+    }
+  ],
+  "deals": [
+    {
+      "id": "d-mgk1h7lv",
+      "customerId": "c-x4vkf8n2",
+      "title": "shoes",
+      "value": 50000,
+      "stage": "Won",
+      "closeDate": "2026-09-12",
+      "createdAt": "2026-09-10T10:52:55.873Z"
+    }
+  ],
+  "activities": []
+}
