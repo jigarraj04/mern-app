@@ -1,9 +1,13 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 
-import { readDB } from "./db.js";
+import { connectDB } from "./db.js";
+import Customer from "./models/Customer.js";
+import Deal, { STAGES } from "./models/Deal.js";
+import Activity from "./models/Activity.js";
 import customersRouter from "./routes/customers.js";
-import dealsRouter, { STAGES } from "./routes/deals.js";
+import dealsRouter from "./routes/deals.js";
 import activitiesRouter from "./routes/activities.js";
 
 const app = express();
@@ -17,41 +21,56 @@ app.use("/api/deals", dealsRouter);
 app.use("/api/activities", activitiesRouter);
 
 // GET /api/stats -> aggregate numbers for the dashboard
-app.get("/api/stats", async (req, res) => {
-  const db = await readDB();
+app.get("/api/stats", async (req, res, next) => {
+  try {
+    const [totalCustomers, stageAgg, recentActivities] = await Promise.all([
+      Customer.countDocuments(),
+      Deal.aggregate([
+        { $group: { _id: "$stage", count: { $sum: 1 }, value: { $sum: "$value" } } },
+      ]),
+      Activity.find().sort({ date: -1 }).limit(5),
+    ]);
 
-  const openStages = STAGES.filter((s) => s !== "Won" && s !== "Lost");
-  const openDeals = db.deals.filter((d) => openStages.includes(d.stage));
-  const wonDeals = db.deals.filter((d) => d.stage === "Won");
+    const byStage = STAGES.map((stage) => {
+      const row = stageAgg.find((r) => r._id === stage);
+      return { stage, count: row?.count || 0, value: row?.value || 0 };
+    });
 
-  const pipelineValue = openDeals.reduce((sum, d) => sum + d.value, 0);
-  const wonValue = wonDeals.reduce((sum, d) => sum + d.value, 0);
+    const open = byStage.filter((s) => s.stage !== "Won" && s.stage !== "Lost");
+    const won = byStage.find((s) => s.stage === "Won");
 
-  const byStage = STAGES.map((stage) => ({
-    stage,
-    count: db.deals.filter((d) => d.stage === stage).length,
-    value: db.deals
-      .filter((d) => d.stage === stage)
-      .reduce((sum, d) => sum + d.value, 0),
-  }));
-
-  const recentActivities = [...db.activities]
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 5);
-
-  res.json({
-    totalCustomers: db.customers.length,
-    openDeals: openDeals.length,
-    pipelineValue,
-    wonValue,
-    wonCount: wonDeals.length,
-    byStage,
-    recentActivities,
-  });
+    res.json({
+      totalCustomers,
+      openDeals: open.reduce((n, s) => n + s.count, 0),
+      pipelineValue: open.reduce((n, s) => n + s.value, 0),
+      wonValue: won.value,
+      wonCount: won.count,
+      byStage,
+      recentActivities,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
-app.listen(PORT, () => {
-  console.log(`Rolodeck CRM API listening on http://localhost:${PORT}`);
+// Central error handler (bad JSON, validation errors, DB errors)
+app.use((err, req, res, next) => {
+  console.error(err);
+  if (err.name === "ValidationError") {
+    return res.status(400).json({ error: err.message });
+  }
+  res.status(err.status || 500).json({ error: err.status ? err.message : "Server error" });
 });
+
+connectDB()
+  .then(() =>
+    app.listen(PORT, () =>
+      console.log(`Rolodeck CRM API listening on http://localhost:${PORT}`)
+    )
+  )
+  .catch((err) => {
+    console.error("Could not connect to MongoDB:", err.message);
+    process.exit(1);
+  });

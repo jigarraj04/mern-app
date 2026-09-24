@@ -1,30 +1,28 @@
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
+import mongoose from "mongoose";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, "data", "db.json");
+const DEFAULT_URI = "mongodb://127.0.0.1:27017/rolodeck";
 
-let writeQueue = Promise.resolve();
-
-/** Read the whole database file. */
-export async function readDB() {
-  const raw = await fs.readFile(DB_PATH, "utf-8");
-  return JSON.parse(raw);
+/** Connect to MongoDB. URI comes from MONGODB_URI (see .env.example). */
+export async function connectDB() {
+  const uri = process.env.MONGODB_URI || DEFAULT_URI;
+  mongoose.set("strictQuery", true);
+  await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+  console.log(`MongoDB connected: ${mongoose.connection.name}`);
 }
+
+export const isValidId = (v) => mongoose.isValidObjectId(v);
+
+/** Escape user input before using it inside a RegExp. */
+export const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
- * Write the whole database file. Writes are queued so concurrent
- * requests never interleave and corrupt the file.
+ * Shared toJSON: expose `_id` as a string `id` and drop `__v`, so the
+ * React client keeps working unchanged (it expects `id`, not `_id`).
  */
-export function writeDB(data) {
-  writeQueue = writeQueue.then(() =>
-    fs.writeFile(DB_PATH, JSON.stringify(data, null, 2))
-  );
-  return writeQueue;
-}
-
-/** Generate a short, prefixed id, e.g. id("c") -> "c-a1b2c3d4". */
-export function id(prefix) {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+export function jsonTransform(_doc, ret) {
+  ret.id = String(ret._id);
+  if (ret.customerId) ret.customerId = String(ret.customerId);
+  delete ret._id;
+  delete ret.__v;
+  return ret;
 }
